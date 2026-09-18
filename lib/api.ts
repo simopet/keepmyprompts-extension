@@ -43,8 +43,8 @@ export const api = {
     call<Record<string, unknown>>('/capture', { method: 'POST', body: JSON.stringify({ content, host, locale }) }),
   score: (input: { prompt_id?: string; content?: string }, locale: string) =>
     call<{ success: boolean; rating?: unknown; cached?: boolean; error?: string }>('/score', { method: 'POST', body: JSON.stringify({ ...input, locale }) }),
-  optimizeLight: (prompt_id: string, locale: string) =>
-    call<{ success: boolean; data?: { variants: unknown[]; originalScore?: unknown; variantScore?: unknown }; remaining?: number; error?: string }>('/optimize-light', { method: 'POST', body: JSON.stringify({ prompt_id, locale }) }),
+  optimizeLight: (input: { prompt_id?: string; content?: string }, locale: string) =>
+    call<{ success: boolean; data?: { variants: unknown[]; originalScore?: unknown; variantScore?: unknown }; remaining?: number; error?: string }>('/optimize-light', { method: 'POST', body: JSON.stringify({ ...input, locale }) }),
   saveVersion: (input: { prompt_id: string; content: string; apply: boolean; version_name?: string }) =>
     call<{ success: boolean; error?: string }>('/versions', { method: 'POST', body: JSON.stringify(input) }),
   track: (name: string, properties?: Record<string, unknown>) =>

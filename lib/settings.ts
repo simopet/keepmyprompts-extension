@@ -14,6 +14,8 @@ export interface Settings {
   /** Per-site capture consent: undefined = not asked yet, true/false = the user's answer. */
   sites: Partial<Record<SiteHost, boolean>>
   locale: 'en' | 'it'
+  /** Pre-send balloon reduced to the logo only (§ 1bis). */
+  balloonCollapsed: boolean
 }
 
 export const DEFAULT_API_BASE = 'https://dev.keepmyprompts.com'
@@ -26,6 +28,7 @@ export const DEFAULT_SETTINGS: Settings = {
   paused: false,
   sites: {},
   locale: 'en',
+  balloonCollapsed: false,
 }
 
 export async function getSettings(): Promise<Settings> {

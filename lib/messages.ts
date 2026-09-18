@@ -27,9 +27,10 @@ export type CaptureResult =
 export type Request =
   | { type: 'getState'; host: SiteHost }
   | { type: 'setConsent'; host: SiteHost; enabled: boolean }
-  | { type: 'capture'; host: SiteHost; content: string }
+  | { type: 'capture'; host: SiteHost; content: string; manual?: boolean }
   | { type: 'score'; prompt_id?: string; content?: string }
-  | { type: 'optimize'; prompt_id: string }
+  | { type: 'optimize'; prompt_id?: string; content?: string }
+  | { type: 'setCollapsed'; collapsed: boolean }
   | { type: 'saveVersion'; prompt_id: string; content: string; apply: boolean; version_name?: string }
   | { type: 'track'; name: string; properties?: Record<string, unknown> }
   | { type: 'me' }
@@ -42,4 +43,5 @@ export type State = {
   consent: boolean | undefined
   locale: 'en' | 'it'
   apiBase: string
+  collapsed: boolean
 }

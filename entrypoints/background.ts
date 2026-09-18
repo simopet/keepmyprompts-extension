@@ -34,6 +34,7 @@ async function handle(msg: Request): Promise<Response> {
         consent: settings.sites[msg.host],
         locale,
         apiBase: settings.apiBase,
+        collapsed: settings.balloonCollapsed,
       }
       return { ok: true, data: state }
     }
@@ -42,12 +43,22 @@ async function handle(msg: Request): Promise<Response> {
       void api.track('ext_capture_toggled', { host: msg.host, enabled: msg.enabled }).catch(() => {})
       return { ok: true, data: null }
     }
+    case 'setCollapsed': {
+      await updateSettings({ balloonCollapsed: msg.collapsed })
+      void api.track('ext_balloon_collapsed', { collapsed: msg.collapsed }).catch(() => {})
+      return { ok: true, data: null }
+    }
     case 'capture': {
       if (!settings.token) return { ok: false, status: 401, error: 'not_connected' }
-      if (settings.paused || settings.sites[msg.host] !== true) return { ok: false, error: 'capture_disabled' }
+      // A manual «Salva» from the balloon is an explicit choice: it bypasses the per-site consent
+      // that gates the silent capture (but never the global pause).
+      if (settings.paused) return { ok: false, error: 'capture_disabled' }
+      if (!msg.manual && settings.sites[msg.host] !== true) return { ok: false, error: 'capture_disabled' }
       const data = await api.capture(msg.content, msg.host, locale)
-      if ((data as { at_limit?: boolean }).at_limit) void api.track('ext_at_limit_shown', { host: msg.host }).catch(() => {})
-      else void api.track('ext_captured', { host: msg.host, created: (data as { created?: boolean }).created }).catch(() => {})
+      const created = (data as { created?: boolean }).created
+      if ((data as { at_limit?: boolean }).at_limit) void api.track('ext_at_limit_shown', { host: msg.host, manual: Boolean(msg.manual) }).catch(() => {})
+      else if (msg.manual) void api.track('ext_draft_saved', { host: msg.host, created }).catch(() => {})
+      else void api.track('ext_captured', { host: msg.host, created }).catch(() => {})
       return { ok: true, data }
     }
     case 'score': {
@@ -55,8 +66,9 @@ async function handle(msg: Request): Promise<Response> {
       return { ok: true, data }
     }
     case 'optimize': {
-      void api.track('ext_optimize_started').catch(() => {})
-      const data = await api.optimizeLight(msg.prompt_id, locale)
+      const draft = !msg.prompt_id
+      void api.track(draft ? 'ext_draft_optimized' : 'ext_optimize_started').catch(() => {})
+      const data = await api.optimizeLight(draft ? { content: msg.content } : { prompt_id: msg.prompt_id }, locale)
       return { ok: true, data }
     }
     case 'saveVersion': {
