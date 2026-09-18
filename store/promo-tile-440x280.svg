@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="440" y2="280" gradientUnits="userSpaceOnUse"><stop stop-color="#0b1220"/><stop offset="1" stop-color="#111a2e"/></linearGradient>
+    <linearGradient id="logo" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse"><stop stop-color="#6366F1"/><stop offset="1" stop-color="#2DD4BF"/></linearGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#ffffff" stroke-opacity="0.05"/></pattern>
+    <symbol id="kmp" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="url(#logo)"/><path d="M120 158 L290 256 L120 354" stroke="#fff" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" fill="none"/><rect x="325" y="212" width="44" height="88" rx="12" fill="#FBBF24"/></symbol>
+  </defs>
+  <rect width="440" height="280" fill="url(#bg)"/><rect width="440" height="280" fill="url(#grid)"/>
+  <use href="#kmp" x="32" y="32" width="64" height="64"/>
+  <text x="112" y="62" font-size="22" font-weight="700" fill="#fff">Keep My Prompts</text>
+  <text x="112" y="86" font-size="14" fill="#94a3b8">Prompt Score in your chat</text>
+  <!-- balloon -->
+  <g transform="translate(32 138)">
+    <rect width="376" height="44" rx="22" fill="#fff" stroke="#e2e8f0"/>
+    <use href="#kmp" x="9" y="8" width="28" height="28"/>
+    <circle cx="62" cy="22" r="13" fill="#16a34a"/><text x="62" y="26.5" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">4.6</text>
+    <rect x="84" y="10" width="98" height="24" rx="12" fill="#f1f5f9"/><text x="133" y="26" font-size="12.5" font-weight="600" fill="#94a3b8" text-anchor="middle">Score prompt</text>
+    <rect x="188" y="10" width="76" height="24" rx="12" fill="#0d9488"/><text x="226" y="26" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle">Optimize</text>
+    <rect x="270" y="10" width="98" height="24" rx="12" fill="#f1f5f9"/><text x="319" y="26" font-size="12.5" font-weight="600" fill="#0f172a" text-anchor="middle">Save to library</text>
+  </g>
+  <text x="32" y="228" font-size="15" fill="#cbd5e1">Score, optimize and save your prompts</text>
+  <text x="32" y="250" font-size="15" fill="#cbd5e1">before you press Enter. Claude · Euria.</text>
+</svg>

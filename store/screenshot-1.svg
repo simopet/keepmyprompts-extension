@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b1220"/><stop offset="1" stop-color="#111a2e"/>
+    </linearGradient>
+    <linearGradient id="logo" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366F1"/><stop offset="1" stop-color="#2DD4BF"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.04"/>
+    </pattern>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="3" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <symbol id="kmp" viewBox="0 0 512 512">
+      <rect width="512" height="512" rx="112" fill="url(#logo)"/>
+      <path d="M120 158 L290 256 L120 354" stroke="#fff" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <rect x="325" y="212" width="44" height="88" rx="12" fill="#FBBF24"/>
+    </symbol>
+  </defs>
+
+  <rect width="1280" height="800" fill="url(#bg)"/>
+  <rect width="1280" height="800" fill="url(#grid)"/>
+
+  <!-- Left column: brand + value -->
+  <use href="#kmp" x="72" y="72" width="56" height="56"/>
+  <text x="144" y="112" font-size="26" font-weight="700" fill="#ffffff">Keep My Prompts</text>
+
+  <text x="72" y="236" font-size="46" font-weight="800" fill="#ffffff" letter-spacing="-1">
+    <tspan x="72" dy="0">Score, optimize and save</tspan>
+    <tspan x="72" dy="56">your prompts, right</tspan>
+    <tspan x="72" dy="56">inside the chat.</tspan>
+  </text>
+
+  <g font-size="21" fill="#cbd5e1">
+    <circle cx="82" cy="440" r="5" fill="#2DD4BF"/><text x="100" y="447">Prompt Score on 6 criteria, before you press Enter</text>
+    <circle cx="82" cy="490" r="5" fill="#2DD4BF"/><text x="100" y="497">One-click Quick Optimize, variant straight into the composer</text>
+    <circle cx="82" cy="540" r="5" fill="#2DD4BF"/><text x="100" y="547">Your prompts saved to your library, never the replies</text>
+  </g>
+  <text x="72" y="720" font-size="17" fill="#64748b">Works in Claude and Euria · keepmyprompts.com</text>
+
+  <!-- Right column: neutral chat composer with the extension UI -->
+  <g transform="translate(700 130)" filter="url(#shadow)">
+    <!-- chat surface -->
+    <rect width="510" height="560" rx="22" fill="#151d2f" stroke="#233047"/>
+    <!-- a previous exchange, abstract -->
+    <rect x="34" y="34" width="300" height="14" rx="7" fill="#2a3650"/>
+    <rect x="34" y="60" width="220" height="14" rx="7" fill="#2a3650"/>
+    <rect x="176" y="106" width="300" height="14" rx="7" fill="#1f2a40"/>
+    <rect x="236" y="132" width="240" height="14" rx="7" fill="#1f2a40"/>
+    <rect x="176" y="158" width="270" height="14" rx="7" fill="#1f2a40"/>
+
+    <!-- detail panel (criteria) -->
+    <g transform="translate(150 196)">
+      <rect width="330" height="216" rx="14" fill="#ffffff"/>
+      <text x="16" y="30" font-size="15" font-weight="700" fill="#0f172a">Prompt Score 3.4</text>
+      <g font-size="13" fill="#334155">
+        <text x="16" y="58">Clarity</text><text x="314" y="58" text-anchor="end" font-weight="700" fill="#0f172a">4</text>
+        <line x1="16" y1="66" x2="314" y2="66" stroke="#f1f5f9"/>
+        <text x="16" y="84">Context</text><text x="314" y="84" text-anchor="end" font-weight="700" fill="#0f172a">3</text>
+        <line x1="16" y1="92" x2="314" y2="92" stroke="#f1f5f9"/>
+        <text x="16" y="110">Role</text><text x="314" y="110" text-anchor="end" font-weight="700" fill="#0f172a">5</text>
+        <line x1="16" y1="118" x2="314" y2="118" stroke="#f1f5f9"/>
+        <text x="16" y="136">Examples</text><text x="314" y="136" text-anchor="end" font-weight="700" fill="#0f172a">1</text>
+      </g>
+      <rect x="16" y="150" width="298" height="30" rx="8" fill="#f8fafc"/>
+      <text x="26" y="170" font-size="12" fill="#334155"><tspan font-weight="700">Tip:</tspan> add the audience and the output format.</text>
+      <rect x="16" y="188" width="150" height="20" rx="8" fill="#0d9488"/>
+      <text x="91" y="202" font-size="11.5" font-weight="700" fill="#fff" text-anchor="middle">Improve this prompt</text>
+    </g>
+
+    <!-- the pre-send balloon -->
+    <g transform="translate(96 426)">
+      <rect width="384" height="40" rx="20" fill="#ffffff" stroke="#e2e8f0"/>
+      <use href="#kmp" x="8" y="7" width="26" height="26"/>
+      <circle cx="58" cy="20" r="12" fill="#ca8a04"/><text x="58" y="24.5" font-size="11.5" font-weight="700" fill="#fff" text-anchor="middle">3.4</text>
+      <rect x="78" y="9" width="96" height="22" rx="11" fill="#f1f5f9"/><text x="126" y="24" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">Score prompt</text>
+      <rect x="180" y="9" width="72" height="22" rx="11" fill="#0d9488"/><text x="216" y="24" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">Optimize</text>
+      <rect x="258" y="9" width="102" height="22" rx="11" fill="#f1f5f9"/><text x="309" y="24" font-size="12" font-weight="600" fill="#0f172a" text-anchor="middle">Save to library</text>
+      <text x="370" y="25" font-size="14" fill="#94a3b8" text-anchor="middle">×</text>
+    </g>
+
+    <!-- composer -->
+    <rect x="30" y="478" width="450" height="56" rx="14" fill="#0f172a" stroke="#2a3650"/>
+    <text x="48" y="512" font-size="14.5" fill="#e2e8f0">Write a lesson plan on the French Revolution…</text>
+    <rect x="436" y="488" width="34" height="34" rx="10" fill="#6366F1"/>
+    <path d="M447 505 L459 505 M453 499 L459 505 L453 511" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
