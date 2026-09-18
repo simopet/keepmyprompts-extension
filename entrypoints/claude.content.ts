@@ -149,7 +149,7 @@ async function boot() {
 
 function mountBalloon() {
   if (balloon || !state) return
-  balloon = new Balloon(strings, state.collapsed)
+  balloon = new Balloon(strings, state.collapsed, state.balloonPos)
 }
 
 // ---------- flow 1: silent capture after a send ----------
@@ -358,7 +358,8 @@ textarea { width: 100%; min-height: 140px; border: 1px solid #e2e8f0; border-rad
 @keyframes s { to { transform: rotate(360deg) } }
 /* pre-send balloon */
 .pill { position: fixed; z-index: 2147483000; display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 4px 6px; box-shadow: 0 4px 18px rgba(15,23,42,.14); white-space: nowrap; }
-.pill .logo { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; cursor: pointer; flex: none; }
+.pill .logo { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; cursor: grab; flex: none; touch-action: none; user-select: none; }
+.pill .logo:active { cursor: grabbing; }
 .pill .logo svg { border-radius: 6px; }
 .pbtn { border: 0; border-radius: 999px; padding: 5px 10px; font: inherit; font-weight: 600; font-size: 12px; cursor: pointer; background: #f1f5f9; color: #0f172a; }
 .pbtn.primary { background: #0d9488; color: #fff; }
@@ -400,6 +401,7 @@ type VariantActions = {
 
 class Ui {
   private box: HTMLDivElement
+  private hideTimer: number | undefined
 
   constructor(private s: Strings) {
     this.box = makeShadowHost().box
@@ -408,32 +410,52 @@ class Ui {
   }
 
   hide() {
+    window.clearTimeout(this.hideTimer)
+    this.box.onmouseenter = null
+    this.box.onmouseleave = null
     this.box.innerHTML = ''
     this.box.style.display = 'none'
   }
 
   private show(html: string) {
+    window.clearTimeout(this.hideTimer)
+    this.box.onmouseenter = null
+    this.box.onmouseleave = null
     this.box.innerHTML = html
     this.box.style.display = ''
     this.anchor()
   }
 
   /**
-   * Panels open ABOVE the composer, right-aligned with it, leaving room for the balloon that sits
-   * just over the composer's top edge. Falls back to the bottom-right corner when there is no composer.
+   * Everything opens next to the balloon: right edges aligned, just above it (or below it when the
+   * balloon sits in the upper half of the window). Dragging the balloon therefore moves every panel
+   * too, which is how the user gets it out of the way of whatever Claude renders near the composer.
+   * Falls back to the bottom-right corner when there is no balloon yet.
    */
   private anchor() {
-    const composer = findComposer()
-    const anchorEl = composer?.closest<HTMLElement>('fieldset') ?? composer?.closest<HTMLElement>('form') ?? composer
-    const rect = anchorEl?.getBoundingClientRect()
-    if (!rect || rect.width === 0) {
+    const rect = balloon?.rect()
+    this.box.style.top = ''
+    this.box.style.bottom = ''
+    if (!rect) {
       this.box.style.right = '20px'
       this.box.style.bottom = '96px'
       return
     }
-    const gapForBalloon = 52
     this.box.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`
-    this.box.style.bottom = `${Math.max(8, window.innerHeight - rect.top + gapForBalloon)}px`
+    if (rect.top > window.innerHeight / 2) {
+      this.box.style.bottom = `${Math.max(8, window.innerHeight - rect.top + 6)}px`
+    } else {
+      this.box.style.top = `${Math.min(window.innerHeight - 60, rect.bottom + 6)}px`
+    }
+  }
+
+  /** The post-send badge fades out on its own unless the user is hovering it. */
+  private autoHide(ms: number) {
+    window.clearTimeout(this.hideTimer)
+    let hovered = false
+    this.box.onmouseenter = () => { hovered = true }
+    this.box.onmouseleave = () => { hovered = false; this.hideTimer = window.setTimeout(() => this.hide(), 1500) }
+    this.hideTimer = window.setTimeout(() => { if (!hovered) this.hide() }, ms)
   }
 
   private q<T extends Element>(sel: string): T | null {
@@ -482,6 +504,8 @@ class Ui {
     const label = opts.atLimit ? this.s.atLimit(opts.atLimit.max) : opts.reused ? this.s.reused(opts.reused) : this.s.saved
     this.show(`<div class="badge" data-a="open">${dot}<span class="muted">${esc(label)}</span></div>`)
     this.q('[data-a="open"]')?.addEventListener('click', () => this.showDetail(opts.rating, opts.atLimit, opts.onOptimize))
+    // A confirmation, not a dialog: it goes away by itself (longer when there is something to act on).
+    this.autoHide(opts.atLimit ? 12000 : 6000)
   }
 
   /** Criteria + tip panel; used by the post-send badge and by the balloon's score dot. */
@@ -525,8 +549,12 @@ class Balloon {
   private flashText: string | null = null
   private flashTimer: number | undefined
   private text = ''
+  /** Set once the user drags the pill: from then on it stays where they left it. */
+  private pos: { x: number; y: number } | null
+  private dragging = false
 
-  constructor(private s: Strings, private collapsed: boolean) {
+  constructor(private s: Strings, private collapsed: boolean, pos: { x: number; y: number } | null) {
+    this.pos = pos
     this.box = makeShadowHost().box
     this.box.className = 'pill'
     this.box.style.display = 'none'
@@ -535,6 +563,68 @@ class Balloon {
     window.setInterval(() => this.tick(), 250)
     window.addEventListener('resize', () => this.anchor())
     window.addEventListener('scroll', () => this.anchor(), true)
+  }
+
+  /** Current viewport rectangle, used by the panels to open next to the pill. */
+  rect(): DOMRect | null {
+    if (this.box.style.display === 'none') return null
+    return this.box.getBoundingClientRect()
+  }
+
+  /**
+   * Drag by the logo. A press that moves less than 5 px is a click (collapse/expand); a longer one
+   * moves the pill and remembers the spot. Double-click on the logo goes back to following the composer.
+   */
+  private installDrag(handle: HTMLElement) {
+    handle.addEventListener('pointerdown', down => {
+      if (down.button !== 0) return
+      const start = { x: down.clientX, y: down.clientY }
+      const origin = this.box.getBoundingClientRect()
+      let moved = false
+      const move = (ev: PointerEvent) => {
+        const dx = ev.clientX - start.x
+        const dy = ev.clientY - start.y
+        if (!moved && Math.hypot(dx, dy) < 5) return
+        moved = true
+        this.dragging = true
+        this.pos = this.clamp({ x: origin.left + dx, y: origin.top + dy })
+        this.applyPos()
+      }
+      const up = () => {
+        document.removeEventListener('pointermove', move, true)
+        document.removeEventListener('pointerup', up, true)
+        if (moved) {
+          this.dragging = false
+          void send({ type: 'setBalloonPos', pos: this.pos })
+        } else {
+          this.toggle()
+        }
+      }
+      document.addEventListener('pointermove', move, true)
+      document.addEventListener('pointerup', up, true)
+      down.preventDefault()
+    })
+    handle.addEventListener('dblclick', () => {
+      this.pos = null
+      void send({ type: 'setBalloonPos', pos: null })
+      this.anchor()
+    })
+  }
+
+  private clamp(p: { x: number; y: number }): { x: number; y: number } {
+    const w = this.box.offsetWidth
+    const h = this.box.offsetHeight
+    return {
+      x: Math.max(8, Math.min(window.innerWidth - w - 8, p.x)),
+      y: Math.max(8, Math.min(window.innerHeight - h - 8, p.y)),
+    }
+  }
+
+  private applyPos() {
+    if (!this.pos) return
+    this.box.style.display = ''
+    this.box.style.left = `${this.pos.x}px`
+    this.box.style.top = `${this.pos.y}px`
   }
 
   /** Follows the composer text; when it changes, a previous draft score no longer applies. */
@@ -548,6 +638,12 @@ class Balloon {
   }
 
   private anchor() {
+    if (this.dragging) return
+    if (this.pos) {
+      this.pos = this.clamp(this.pos)
+      this.applyPos()
+      return
+    }
     const composer = findComposer()
     const anchorEl = composer?.closest<HTMLElement>('fieldset') ?? composer?.closest<HTMLElement>('form') ?? composer
     const rect = anchorEl?.getBoundingClientRect()
@@ -580,7 +676,7 @@ class Balloon {
     const words = wordCount(this.text)
     const scored = draft.rating && sameText(draft.text, this.text) ? draft.rating : null
     const overall = scored ? Number(scored.overallScore) : NaN
-    const logo = `<span class="logo" data-a="toggle" title="${esc(this.collapsed ? this.s.expand : this.s.collapse)}">${LOGO_SVG}</span>`
+    const logo = `<span class="logo" data-a="handle" title="${esc(this.s.dragHint)}">${LOGO_SVG}</span>`
 
     if (this.collapsed) {
       this.box.innerHTML = logo
@@ -603,6 +699,8 @@ class Balloon {
     }
 
     this.box.querySelectorAll('[data-a="toggle"]').forEach(el => el.addEventListener('click', () => this.toggle()))
+    const handle = this.box.querySelector<HTMLElement>('[data-a="handle"]')
+    if (handle) this.installDrag(handle)
     this.box.querySelector('[data-a="score"]')?.addEventListener('click', () => void scoreDraft(this.text))
     this.box.querySelector('[data-a="optimize"]')?.addEventListener('click', () => void optimizeDraft(this.text))
     this.box.querySelector('[data-a="save"]')?.addEventListener('click', () => void saveDraft(this.text))

@@ -31,6 +31,7 @@ export type Request =
   | { type: 'score'; prompt_id?: string; content?: string }
   | { type: 'optimize'; prompt_id?: string; content?: string }
   | { type: 'setCollapsed'; collapsed: boolean }
+  | { type: 'setBalloonPos'; pos: { x: number; y: number } | null }
   | { type: 'saveVersion'; prompt_id: string; content: string; apply: boolean; version_name?: string }
   | { type: 'track'; name: string; properties?: Record<string, unknown> }
   | { type: 'me' }
@@ -44,4 +45,5 @@ export type State = {
   locale: 'en' | 'it'
   apiBase: string
   collapsed: boolean
+  balloonPos: { x: number; y: number } | null
 }

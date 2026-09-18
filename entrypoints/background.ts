@@ -41,12 +41,17 @@ async function handle(msg: Request): Promise<Response> {
         locale: settings.locale,
         apiBase: settings.apiBase,
         collapsed: settings.balloonCollapsed,
+        balloonPos: settings.balloonPos,
       }
       return { ok: true, data: state }
     }
     case 'setConsent': {
       await updateSettings({ sites: { [msg.host]: msg.enabled } })
       void api.track('ext_capture_toggled', { host: msg.host, enabled: msg.enabled }).catch(() => {})
+      return { ok: true, data: null }
+    }
+    case 'setBalloonPos': {
+      await updateSettings({ balloonPos: msg.pos })
       return { ok: true, data: null }
     }
     case 'setCollapsed': {

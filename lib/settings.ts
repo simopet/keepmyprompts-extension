@@ -16,6 +16,8 @@ export interface Settings {
   locale: 'en' | 'it'
   /** Pre-send balloon reduced to the logo only (§ 1bis). */
   balloonCollapsed: boolean
+  /** Where the user dragged the balloon (viewport px); null = follow the composer. */
+  balloonPos: { x: number; y: number } | null
 }
 
 export const DEFAULT_API_BASE = 'https://dev.keepmyprompts.com'
@@ -29,6 +31,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sites: {},
   locale: 'en',
   balloonCollapsed: false,
+  balloonPos: null,
 }
 
 export async function getSettings(): Promise<Settings> {
