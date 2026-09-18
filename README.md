@@ -31,7 +31,7 @@ npm run dev            # WXT dev server with hot reload (Chrome)
 npm run typecheck
 ```
 
-The extension ID is pinned through the manifest `key` (public half only) so it stays identical between unpacked loads and the store.
+The manifest `key` (public half only) pins the extension ID for unpacked loads. The Chrome Web Store rejects a manifest that contains `key`, so the store package is built with `npm run zip:store`, which omits it; after the first upload, the store's own public key (developer dashboard → Package → View public key) goes into `wxt.config.ts` so local loads share the store ID.
 
 ## Privacy
 

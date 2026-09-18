@@ -8,10 +8,12 @@ export default defineConfig({
     name: 'Keep My Prompts',
     description:
       'Captures the prompts you send in Claude into your Keep My Prompts library, scores them and offers a one-click Quick Optimize.',
-    // PUBLIC key. Pins the extension ID (ppgodjgclbacjhfpepijeagkmmfbibhh) so it is identical
-    // between "load unpacked" and the Web Store: the KMP web app's one-click connect page will
-    // address this ID via externally_connectable. The private half never enters the repo.
-    key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4hMCs1xDqiLjUnxYusjqkJtbT2gxqLDhYb8QnLOcZWDE/tQhH28HRQwmOTsybPB0ckmogd+OOyfEuRnW2QhKP5DZmijuoX8/6TO1k8D4Q30ac7sAfMtRBio38U0YPb0GIL3YpMAUJvOq0ADYNFCxYDHyoKZlgRkAcmaG/WqPHXR+gonduiutMgrggMelmSE8+rQ2CL5/IyE78Ky/qRPh1Mx76e/YDkstxbuZrsUK4RGwWYNDHoGFSXNKKN1OyXngYXfzzs1d5EyFqYaJSFCPh0/7mARvIPXlM5MNuUGUg28fbyfMyI/t5p4ynvSLhI74zDeUxqxzMzn7HOb4szjbKQIDAQAB',
+    // PUBLIC key, for UNPACKED loads only: it pins the extension ID so a locally loaded build has the
+    // same ID as the store listing. The Chrome Web Store REJECTS a manifest with `key` ("Il campo key
+    // non è consentito"), so the store zip is built with KMP_STORE_ZIP=1 (npm run zip:store), which
+    // omits it. After the first upload, replace this value with the public key shown in the store's
+    // developer dashboard (Package → View public key) so local loads adopt the store's ID.
+    ...(process.env.KMP_STORE_ZIP ? {} : { key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4hMCs1xDqiLjUnxYusjqkJtbT2gxqLDhYb8QnLOcZWDE/tQhH28HRQwmOTsybPB0ckmogd+OOyfEuRnW2QhKP5DZmijuoX8/6TO1k8D4Q30ac7sAfMtRBio38U0YPb0GIL3YpMAUJvOq0ADYNFCxYDHyoKZlgRkAcmaG/WqPHXR+gonduiutMgrggMelmSE8+rQ2CL5/IyE78Ky/qRPh1Mx76e/YDkstxbuZrsUK4RGwWYNDHoGFSXNKKN1OyXngYXfzzs1d5EyFqYaJSFCPh0/7mARvIPXlM5MNuUGUg28fbyfMyI/t5p4ynvSLhI74zDeUxqxzMzn7HOb4szjbKQIDAQAB' }),
     permissions: ['storage'],
     host_permissions: [
       'https://www.keepmyprompts.com/*',
