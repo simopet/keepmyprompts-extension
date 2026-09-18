@@ -10,6 +10,14 @@ import { t, type Strings } from '../lib/strings'
  * or clicks Send we read the composer text immediately, then 600 ms later check that the
  * composer emptied. Only then the text is treated as sent. This avoids capturing drafts that
  * were not sent and survives the composer clearing itself before any "sent" event we could hook.
+ *
+ * What gets captured (decision 6, 2026-09-18): most chat messages are conversational
+ * follow-ups ("yes", "shorter", "and point 3?") that nobody will reuse, and saving them all turns
+ * the library into a transcript. So a message is captured only when it looks like a prompt:
+ *   - the FIRST message of a conversation (URL still /new) needs at least 20 words;
+ *   - a follow-up (URL already /chat/<id>) needs at least 25, i.e. a genuinely new instruction.
+ * Below the threshold nothing is saved and no badge appears; the skip is counted as an event so
+ * the prototype gate can measure how much noise the filter removed.
  */
 
 const HOST = 'claude.ai' as const
@@ -22,7 +30,8 @@ const COMPOSER_SELECTORS = [
 ]
 const SEND_BUTTON_SELECTOR = 'button[aria-label*="send" i], button[aria-label*="invia" i], button[type="submit"]'
 const CONFIRM_DELAY_MS = 600
-const MIN_CHARS = 3
+const MIN_WORDS_FIRST_MESSAGE = 20
+const MIN_WORDS_FOLLOW_UP = 25
 const DUPLICATE_WINDOW_MS = 5000
 
 export default defineContentScript({
@@ -120,13 +129,30 @@ function armCaptureListeners() {
   )
 }
 
+function wordCount(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length
+}
+
+/** True while the URL is still /new (or the root): the message about to go is the conversation opener. */
+function isNewConversation(): boolean {
+  const p = location.pathname.replace(/\/+$/, '')
+  return p === '' || p === '/new' || p.startsWith('/new/')
+}
+
 function armCapture(text: string) {
-  if (text.length < MIN_CHARS) return
+  if (!text) return
+  const first = isNewConversation() // read BEFORE the send flips the URL to /chat/<id>
+  const words = wordCount(text)
+  const min = first ? MIN_WORDS_FIRST_MESSAGE : MIN_WORDS_FOLLOW_UP
   window.setTimeout(() => {
     const now = composerText(findComposer())
     if (now === text) return // not sent (validation, network, or the user changed their mind)
     if (text === lastCaptured.text && Date.now() - lastCaptured.at < DUPLICATE_WINDOW_MS) return
     lastCaptured = { text, at: Date.now() }
+    if (words < min) {
+      void send({ type: 'track', name: 'ext_capture_skipped', properties: { reason: first ? 'short_first' : 'short_follow_up', words } })
+      return
+    }
     void onSent(text)
   }, CONFIRM_DELAY_MS)
 }

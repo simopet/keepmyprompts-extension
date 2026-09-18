@@ -6,7 +6,7 @@ Captures the prompts you send in [Claude](https://claude.ai) into your [Keep My 
 
 ## What it does
 
-1. **Silent capture.** When you press Enter or click Send, the text of your prompt (only the prompt, never the reply) is saved to your library, in a system category called *From chats*. Sending the same text again bumps a reuse counter instead of creating a duplicate.
+1. **Silent capture.** When you press Enter or click Send, the text of your prompt (only the prompt, never the reply) is saved to your library, in a system category called *From chats*. Sending the same text again bumps a reuse counter instead of creating a duplicate. Only messages that look like prompts are kept: the first message of a conversation needs at least 20 words, a follow-up at least 25, so "yes", "shorter" and "and point 3?" never reach your library.
 2. **Prompt Score badge.** A small pill appears bottom-right with the score. Click it for the six criteria and a tip.
 3. **Improve this prompt.** Quick Optimize runs; the variant opens in a panel with *Replace in composer* (your library prompt becomes the variant, the previous text is kept as a version) and *Save as version*.
 
