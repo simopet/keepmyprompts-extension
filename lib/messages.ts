@@ -17,7 +17,7 @@ export type Variant = {
   strategy: string
   strategyName?: string
   changes?: string[]
-  promptScore?: { overall?: number } | number
+  promptScore?: { overall?: number; tip?: string | null; [criterion: string]: unknown } | number
 }
 
 export type CaptureResult =

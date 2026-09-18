@@ -89,6 +89,26 @@ function replaceComposerText(text: string): boolean {
   return true
 }
 
+/** Whitespace-insensitive equality: ProseMirror may re-flow line breaks and trailing spaces on insert. */
+function sameText(a: string, b: string): boolean {
+  return a.replace(/\s+/g, ' ').trim() === b.replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * The optimizer already scored the variant it returned; turn that into the Rating shape the badge
+ * and the balloon render, so replacing the composer text with a variant never triggers a second
+ * scoring call when the user sends it.
+ */
+function ratingFromPromptScore(ps: Variant['promptScore']): Rating | null {
+  if (!ps || typeof ps !== 'object' || typeof ps.overall !== 'number') return null
+  const scores: Record<string, number> = {}
+  for (const [k, v] of Object.entries(ps)) {
+    if (k !== 'overall' && k !== 'tip' && typeof v === 'number') scores[k] = v
+  }
+  const system = 'behavioralClarity' in scores
+  return { scores, overallScore: ps.overall, tip: typeof ps.tip === 'string' ? ps.tip : null, promptType: system ? 'system_prompt' : 'user_prompt' }
+}
+
 /** True while the URL is still /new (or the root): the message about to go is the conversation opener. */
 function isNewConversation(): boolean {
   const p = location.pathname.replace(/\/+$/, '')
@@ -191,7 +211,7 @@ async function onSent(text: string) {
 
   // If the balloon already scored exactly this text, reuse it instead of paying a second call.
   let rating: Rating | null = null
-  if (draft.rating && draft.text === text) {
+  if (draft.rating && sameText(draft.text, text)) {
     rating = draft.rating
   } else {
     const scoreRes = await send<{ success: boolean; rating?: Rating; error?: string }>(
@@ -224,6 +244,8 @@ async function optimizeSaved(promptId: string) {
         // snapshotted as a version) AND the composer shows it. Sending it then dedups to the same prompt.
         const saved = await send({ type: 'saveVersion', prompt_id: promptId, content: variant.content, apply: true })
         const replaced = replaceComposerText(variant.content)
+        draft = { text: variant.content, rating: ratingFromPromptScore(variant.promptScore) }
+        balloon?.render()
         ui?.showMessage(saved.ok && replaced ? strings.applied : strings.error)
       },
     },
@@ -283,9 +305,11 @@ async function optimizeDraft(text: string) {
       run: () => {
         // Pre-send: local only. Nothing is written until the user saves or sends.
         const replaced = replaceComposerText(variant.content)
-        ui?.showMessage(replaced ? strings.replacedLocal : strings.error)
-        draft = { text: '', rating: null }
+        // The composer now holds the variant, whose score we already have: the balloon shows it,
+        // «Score» stays disabled, and the send reuses it instead of scoring a third time.
+        draft = { text: variant.content, rating: ratingFromPromptScore(variant.promptScore) }
         balloon?.render()
+        ui?.showMessage(replaced ? strings.replacedLocal : strings.error)
       },
     },
     secondary: {
@@ -554,7 +578,7 @@ class Balloon {
 
   render() {
     const words = wordCount(this.text)
-    const scored = draft.rating && draft.text === this.text ? draft.rating : null
+    const scored = draft.rating && sameText(draft.text, this.text) ? draft.rating : null
     const overall = scored ? Number(scored.overallScore) : NaN
     const logo = `<span class="logo" data-a="toggle" title="${esc(this.collapsed ? this.s.expand : this.s.collapse)}">${LOGO_SVG}</span>`
 
