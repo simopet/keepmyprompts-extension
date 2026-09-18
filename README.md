@@ -22,7 +22,7 @@ npm run build          # → .output/chrome-mv3
 
 Chrome / Edge → `chrome://extensions` → Developer mode → *Load unpacked* → pick `.output/chrome-mv3`.
 
-Then click the extension icon, choose the server, paste your **extension key** and Connect. In the prototype the key is created with `POST /api/api-keys` `{"name":"extension","scope":"ext"}` while logged in on the web app; v1 adds a one-click connect page.
+Then click the extension icon, paste your **extension key** (keepmyprompts.com › Settings › Integrations › Browser extension) and Connect. Production builds talk to www.keepmyprompts.com only; a development build (`npm run dev`, or `npx wxt build -m development`, output in `.output/chrome-mv3-dev`) also offers the dev server and localhost in the popup.
 
 ## Development
 

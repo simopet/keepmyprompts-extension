@@ -1,8 +1,10 @@
 import { defineConfig } from 'wxt'
 
 // docs: https://wxt.dev/api/config.html
+// Production builds talk to www.keepmyprompts.com only. The dev server and localhost exist just
+// in development builds (`wxt` / `wxt build --mode development`): users must never see or pick them.
 export default defineConfig({
-  manifest: {
+  manifest: ({ mode }) => ({
     name: 'Keep My Prompts',
     description:
       'Captures the prompts you send in Claude into your Keep My Prompts library, scores them and offers a one-click Quick Optimize.',
@@ -13,10 +15,11 @@ export default defineConfig({
     permissions: ['storage'],
     host_permissions: [
       'https://www.keepmyprompts.com/*',
-      'https://dev.keepmyprompts.com/*',
-      'http://localhost/*',
+      ...(mode === 'development' ? ['https://dev.keepmyprompts.com/*', 'http://localhost/*'] : []),
     ],
     // Only the extension's own pages may message it; the connect page lives here (v1).
-    externally_connectable: { matches: ['https://www.keepmyprompts.com/*', 'https://dev.keepmyprompts.com/*'] },
-  },
+    externally_connectable: {
+      matches: ['https://www.keepmyprompts.com/*', ...(mode === 'development' ? ['https://dev.keepmyprompts.com/*'] : [])],
+    },
+  }),
 })

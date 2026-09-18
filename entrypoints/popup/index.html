@@ -11,17 +11,17 @@
       <h1><img src="/icon/32.png" width="20" height="20" alt="" /> Keep My Prompts</h1>
 
       <section id="connect">
-        <label>Server
+        <label id="server-row" hidden>Server (development build)
           <select id="apiBase">
-            <option value="https://dev.keepmyprompts.com">dev.keepmyprompts.com</option>
             <option value="https://www.keepmyprompts.com">www.keepmyprompts.com</option>
+            <option value="https://dev.keepmyprompts.com">dev.keepmyprompts.com</option>
             <option value="http://localhost:3999">localhost:3999</option>
           </select>
         </label>
         <label>Extension key
           <input id="token" type="password" placeholder="kmp_live_…" autocomplete="off" />
         </label>
-        <p class="muted">Settings › Integrations › Extension, or <code>POST /api/api-keys {"scope":"ext"}</code> in the prototype.</p>
+        <p class="muted">Get the key at keepmyprompts.com › Settings › Integrations › Browser extension.</p>
         <button id="save" class="btn">Connect</button>
         <p id="status" class="muted"></p>
       </section>

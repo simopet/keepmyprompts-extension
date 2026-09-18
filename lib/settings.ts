@@ -20,7 +20,12 @@ export interface Settings {
   balloonPos: { x: number; y: number } | null
 }
 
-export const DEFAULT_API_BASE = 'https://dev.keepmyprompts.com'
+export const PROD_API_BASE = 'https://www.keepmyprompts.com'
+export const DEFAULT_API_BASE = PROD_API_BASE
+/** Servers a build may talk to. Development builds add the dev host and localhost; production knows one. */
+export const ALLOWED_API_BASES: string[] = import.meta.env.DEV
+  ? [PROD_API_BASE, 'https://dev.keepmyprompts.com', 'http://localhost:3999']
+  : [PROD_API_BASE]
 
 const KEY = 'settings'
 
@@ -37,7 +42,10 @@ export const DEFAULT_SETTINGS: Settings = {
 export async function getSettings(): Promise<Settings> {
   const raw = await browser.storage.local.get(KEY)
   const stored = (raw[KEY] as Partial<Settings> | undefined) ?? {}
-  return { ...DEFAULT_SETTINGS, ...stored, sites: { ...(stored.sites ?? {}) } }
+  const merged = { ...DEFAULT_SETTINGS, ...stored, sites: { ...(stored.sites ?? {}) } }
+  // A production build ignores any non-production server left in storage by a development build.
+  if (!ALLOWED_API_BASES.includes(merged.apiBase)) merged.apiBase = DEFAULT_API_BASE
+  return merged
 }
 
 export async function updateSettings(patch: Partial<Settings>): Promise<Settings> {

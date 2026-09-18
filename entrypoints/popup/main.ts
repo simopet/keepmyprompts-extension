@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser'
-import { DEFAULT_API_BASE, detectLocale, getSettings, updateSettings } from '../../lib/settings'
+import { ALLOWED_API_BASES, DEFAULT_API_BASE, detectLocale, getSettings, updateSettings } from '../../lib/settings'
 import type { Request, Response } from '../../lib/messages'
 
 type Me = { user: { email: string; name: string | null }; plan: string; prompts: { current: number; max: number | null }; quick_optimize: { daily_limit: number; used_today: number; remaining: number } }
@@ -12,6 +12,8 @@ function send<T>(msg: Request): Promise<Response<T>> {
 
 async function refresh() {
   const s = await getSettings()
+  // The server picker exists only in development builds; production talks to one server.
+  $('server-row').hidden = !import.meta.env.DEV
   $<HTMLSelectElement>('apiBase').value = s.apiBase || DEFAULT_API_BASE
   $<HTMLInputElement>('paused').checked = s.paused
   $<HTMLInputElement>('site-claude').checked = s.sites['claude.ai'] === true
@@ -37,7 +39,8 @@ async function refresh() {
 
 $('save').addEventListener('click', async () => {
   const token = $<HTMLInputElement>('token').value.trim()
-  const apiBase = $<HTMLSelectElement>('apiBase').value
+  const picked = $<HTMLSelectElement>('apiBase').value
+  const apiBase = ALLOWED_API_BASES.includes(picked) ? picked : DEFAULT_API_BASE
   if (!token.startsWith('kmp_live_')) {
     $('status').textContent = 'That does not look like a KMP key (kmp_live_…).'
     return
