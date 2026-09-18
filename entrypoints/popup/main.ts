@@ -15,6 +15,7 @@ async function refresh() {
   $<HTMLSelectElement>('apiBase').value = s.apiBase || DEFAULT_API_BASE
   $<HTMLInputElement>('paused').checked = s.paused
   $<HTMLInputElement>('site-claude').checked = s.sites['claude.ai'] === true
+  $<HTMLInputElement>('site-euria').checked = s.sites['euria.infomaniak.com'] === true
   $<HTMLAnchorElement>('library').href = `${s.apiBase}/dashboard`
 
   const connected = Boolean(s.token)
@@ -58,6 +59,9 @@ $('paused').addEventListener('change', async e => {
 })
 $('site-claude').addEventListener('change', async e => {
   await send({ type: 'setConsent', host: 'claude.ai', enabled: (e.target as HTMLInputElement).checked })
+})
+$('site-euria').addEventListener('change', async e => {
+  await send({ type: 'setConsent', host: 'euria.infomaniak.com', enabled: (e.target as HTMLInputElement).checked })
 })
 $('disconnect').addEventListener('click', async () => {
   await updateSettings({ token: null })

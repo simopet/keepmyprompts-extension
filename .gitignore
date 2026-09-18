@@ -6,3 +6,4 @@ node_modules/
 # the manifest `key` is the PUBLIC key; the private half never enters the repo
 key.pem
 .env*
+/chrome-mv3/

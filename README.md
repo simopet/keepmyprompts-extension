@@ -1,8 +1,8 @@
 # Keep My Prompts — browser extension (prototype)
 
-Captures the prompts you send in [Claude](https://claude.ai) into your [Keep My Prompts](https://www.keepmyprompts.com) library, scores them with Prompt Score and offers a one-click Quick Optimize, without leaving the chat.
+Captures the prompts you send in [Claude](https://claude.ai) and [Euria](https://euria.infomaniak.com) into your [Keep My Prompts](https://www.keepmyprompts.com) library, scores them with Prompt Score and offers a one-click Quick Optimize, without leaving the chat.
 
-**Status: prototype, Claude only, not on any store.** Selectors are hardcoded; ChatGPT, Gemini, remote selector config and one-click connect come in v1 once the prototype clears its gate.
+**Status: prototype, Claude and Euria (Infomaniak), not on any store.** Selectors are hardcoded; ChatGPT, Gemini, remote selector config and one-click connect come in v1 once the prototype clears its gate.
 
 ## What it does
 

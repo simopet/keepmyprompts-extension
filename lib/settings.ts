@@ -5,7 +5,7 @@ import { browser } from 'wxt/browser'
  * `token` is the `kmp_live_...` extension key (scope `ext`); it is only ever read by the
  * background service worker, which is the single place that talks to the API.
  */
-export type SiteHost = 'claude.ai'
+export type SiteHost = 'claude.ai' | 'euria.infomaniak.com'
 
 export interface Settings {
   apiBase: string
