@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Keep My Prompts</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Keep My Prompts</h1>
+
+      <section id="connect">
+        <label>Server
+          <select id="apiBase">
+            <option value="https://dev.keepmyprompts.com">dev.keepmyprompts.com</option>
+            <option value="https://www.keepmyprompts.com">www.keepmyprompts.com</option>
+            <option value="http://localhost:3999">localhost:3999</option>
+          </select>
+        </label>
+        <label>Extension key
+          <input id="token" type="password" placeholder="kmp_live_…" autocomplete="off" />
+        </label>
+        <p class="muted">Settings › Integrations › Extension, or <code>POST /api/api-keys {"scope":"ext"}</code> in the prototype.</p>
+        <button id="save" class="btn">Connect</button>
+        <p id="status" class="muted"></p>
+      </section>
+
+      <section id="account" hidden>
+        <p id="who"></p>
+        <p id="limits" class="muted"></p>
+        <label class="toggle"><input id="paused" type="checkbox" /> Pause everywhere</label>
+        <label class="toggle"><input id="site-claude" type="checkbox" /> Capture on claude.ai</label>
+        <p><a id="library" href="#" target="_blank" rel="noopener">Open my library</a> · <button id="disconnect" class="link">Disconnect</button></p>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

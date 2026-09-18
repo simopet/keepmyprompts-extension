@@ -1,0 +1,60 @@
+/** UI copy, EN + IT. Italian carries its accents; no em dashes. */
+const STRINGS = {
+  en: {
+    consentTitle: 'Keep My Prompts',
+    consentBody: 'Save the prompts you send here to your library? Only what you type, never the replies. You can pause any time from the extension icon.',
+    consentYes: 'Yes, save them',
+    consentNo: 'Not on this site',
+    scoring: 'Scoring…',
+    score: 'Prompt Score',
+    tip: 'Tip',
+    improve: 'Improve this prompt',
+    optimizing: 'Optimizing…',
+    replace: 'Replace in composer',
+    saveVersion: 'Save as version',
+    close: 'Close',
+    saved: 'Saved to your library',
+    reused: (n: number) => `Reused ${n} times`,
+    atLimit: (max: number) => `Library full (${max}/${max}). Upgrade to Pro to keep saving.`,
+    upgrade: 'Upgrade',
+    alreadyOptimal: 'Already optimal: no better variant found.',
+    dailyLimit: 'Daily Quick Optimize limit reached.',
+    notConnected: 'Connect the extension to your Keep My Prompts account from the extension icon.',
+    error: 'Something went wrong. Try again in a moment.',
+    variantTitle: 'Optimized variant',
+    applied: 'Composer updated and saved to your library',
+    versionSaved: 'Saved as a new version',
+  },
+  it: {
+    consentTitle: 'Keep My Prompts',
+    consentBody: 'Salvare nella tua libreria i prompt che invii qui? Solo quello che scrivi tu, mai le risposte. Puoi mettere in pausa quando vuoi dall’icona dell’estensione.',
+    consentYes: 'Sì, salvali',
+    consentNo: 'Non su questo sito',
+    scoring: 'Valutazione in corso…',
+    score: 'Prompt Score',
+    tip: 'Consiglio',
+    improve: 'Migliora questo prompt',
+    optimizing: 'Ottimizzazione in corso…',
+    replace: 'Sostituisci nella casella',
+    saveVersion: 'Salva come versione',
+    close: 'Chiudi',
+    saved: 'Salvato nella tua libreria',
+    reused: (n: number) => `Riusato ${n} volte`,
+    atLimit: (max: number) => `Libreria piena (${max}/${max}). Passa a Pro per continuare a salvare.`,
+    upgrade: 'Passa a Pro',
+    alreadyOptimal: 'Già ottimale: nessuna variante migliore trovata.',
+    dailyLimit: 'Limite giornaliero di Quick Optimize raggiunto.',
+    notConnected: 'Collega l’estensione al tuo account Keep My Prompts dall’icona dell’estensione.',
+    error: 'Qualcosa è andato storto. Riprova tra un momento.',
+    variantTitle: 'Variante ottimizzata',
+    applied: 'Casella aggiornata e prompt salvato nella libreria',
+    versionSaved: 'Salvato come nuova versione',
+  },
+} as const
+
+export type Locale = keyof typeof STRINGS
+export type Strings = (typeof STRINGS)['en']
+
+export function t(locale: Locale): Strings {
+  return STRINGS[locale] as Strings
+}
