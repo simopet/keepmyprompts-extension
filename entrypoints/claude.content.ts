@@ -106,7 +106,8 @@ let lastCaptured = { text: '', at: 0 }
 let draft: { text: string; rating: Rating | null } = { text: '', rating: null }
 
 async function boot() {
-  const res = await send<State>({ type: 'getState', host: HOST })
+  const browserLocale: 'en' | 'it' = navigator.language.toLowerCase().startsWith('it') ? 'it' : 'en'
+  const res = await send<State>({ type: 'getState', host: HOST, locale: browserLocale })
   if (!res.ok) return
   state = res.data
   strings = t(state.locale)
@@ -390,6 +391,25 @@ class Ui {
   private show(html: string) {
     this.box.innerHTML = html
     this.box.style.display = ''
+    this.anchor()
+  }
+
+  /**
+   * Panels open ABOVE the composer, right-aligned with it, leaving room for the balloon that sits
+   * just over the composer's top edge. Falls back to the bottom-right corner when there is no composer.
+   */
+  private anchor() {
+    const composer = findComposer()
+    const anchorEl = composer?.closest<HTMLElement>('fieldset') ?? composer?.closest<HTMLElement>('form') ?? composer
+    const rect = anchorEl?.getBoundingClientRect()
+    if (!rect || rect.width === 0) {
+      this.box.style.right = '20px'
+      this.box.style.bottom = '96px'
+      return
+    }
+    const gapForBalloon = 52
+    this.box.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`
+    this.box.style.bottom = `${Math.max(8, window.innerHeight - rect.top + gapForBalloon)}px`
   }
 
   private q<T extends Element>(sel: string): T | null {
@@ -445,7 +465,7 @@ class Ui {
     const overall = rating ? Number(rating.overallScore) : NaN
     const rows = rating
       ? Object.entries(rating.scores)
-          .map(([k, v]) => `<div class="row"><span>${esc(k)}</span><b>${esc(String(v))}</b></div>`)
+          .map(([k, v]) => `<div class="row"><span>${esc(this.s.criteria[k] ?? k)}</span><b>${esc(String(v))}</b></div>`)
           .join('')
       : ''
     const tip = rating?.tip ? `<div class="tip"><b>${esc(this.s.tip)}:</b> ${esc(rating.tip)}</div>` : ''
@@ -552,7 +572,7 @@ class Balloon {
         : ''
       const flash = this.flashText ? `<span class="flash">${esc(this.flashText)}</span>` : ''
       this.box.innerHTML = `${logo}${dot}
-        <button class="pbtn" data-a="score" ${canAct ? '' : 'disabled'} title="${canAct ? '' : esc(this.s.tooShort)}">${esc(this.s.evaluate)}</button>
+        <button class="pbtn" data-a="score" ${canAct && !scored ? '' : 'disabled'} title="${scored ? esc(this.s.alreadyScored) : canAct ? '' : esc(this.s.tooShort)}">${esc(this.s.evaluate)}</button>
         ${optimize}
         <button class="pbtn" data-a="save" ${canAct ? '' : 'disabled'} title="${canAct ? '' : esc(this.s.tooShort)}">${esc(this.s.saveToLibrary)}</button>
         ${flash}<button class="x" data-a="toggle" title="${esc(this.s.collapse)}">×</button>`

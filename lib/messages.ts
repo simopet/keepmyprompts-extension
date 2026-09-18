@@ -25,7 +25,7 @@ export type CaptureResult =
   | { created: false; at_limit: true; current: number; max: number | null }
 
 export type Request =
-  | { type: 'getState'; host: SiteHost }
+  | { type: 'getState'; host: SiteHost; locale?: 'en' | 'it' }
   | { type: 'setConsent'; host: SiteHost; enabled: boolean }
   | { type: 'capture'; host: SiteHost; content: string; manual?: boolean }
   | { type: 'score'; prompt_id?: string; content?: string }

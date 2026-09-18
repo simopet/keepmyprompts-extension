@@ -34,6 +34,8 @@ const STRINGS = {
     remainingQuick: (n: number) => `${n} Quick Optimize left today`,
     collapse: 'Hide',
     expand: 'Keep My Prompts',
+    alreadyScored: 'Already scored. Edit the text to score again.',
+    criteria: { clarity: 'Clarity', context: 'Context', tcof: 'TCOF structure', rolePrompting: 'Role', fewShot: 'Examples', chainOfThought: 'Step-by-step reasoning', behavioralClarity: 'Behavioral clarity', constraintCoverage: 'Constraint coverage', personaTone: 'Persona and tone' } as Record<string, string>,
   },
   it: {
     consentTitle: 'Keep My Prompts',
@@ -69,6 +71,8 @@ const STRINGS = {
     remainingQuick: (n: number) => `${n} Quick Optimize rimaste oggi`,
     collapse: 'Nascondi',
     expand: 'Keep My Prompts',
+    alreadyScored: 'Già valutato. Modifica il testo per valutarlo di nuovo.',
+    criteria: { clarity: 'Chiarezza', context: 'Contesto', tcof: 'Struttura TCOF', rolePrompting: 'Ruolo', fewShot: 'Esempi', chainOfThought: 'Ragionamento passo passo', behavioralClarity: 'Chiarezza comportamentale', constraintCoverage: 'Copertura dei vincoli', personaTone: 'Persona e tono' } as Record<string, string>,
   },
 } as const
 

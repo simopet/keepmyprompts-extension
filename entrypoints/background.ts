@@ -28,11 +28,17 @@ async function handle(msg: Request): Promise<Response> {
 
   switch (msg.type) {
     case 'getState': {
+      // The page knows the browser language; the worker only remembers it. Before this, the
+      // locale was set only when connecting from the popup, so early adopters stayed on 'en'.
+      if (msg.locale && msg.locale !== settings.locale) {
+        await updateSettings({ locale: msg.locale })
+        settings.locale = msg.locale
+      }
       const state: State = {
         connected: Boolean(settings.token),
         paused: settings.paused,
         consent: settings.sites[msg.host],
-        locale,
+        locale: settings.locale,
         apiBase: settings.apiBase,
         collapsed: settings.balloonCollapsed,
       }
