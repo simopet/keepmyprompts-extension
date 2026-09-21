@@ -1,5 +1,7 @@
 # Chrome Web Store listing — Keep My Prompts
 
+Published 2026-09-21 (unlisted): https://chromewebstore.google.com/detail/keep-my-prompts/kpdfoadeikmcchihgecmpkkkhpgfjifp · store ID `kpdfoadeikmcchihgecmpkkkhpgfjifp`
+
 Copy each block into the matching field of the Developer Dashboard. Plain text only: the store renders no
 markdown in descriptions (line breaks are kept).
 

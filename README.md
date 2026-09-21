@@ -2,7 +2,7 @@
 
 Captures the prompts you send in [Claude](https://claude.ai) and [Euria](https://euria.infomaniak.com) into your [Keep My Prompts](https://www.keepmyprompts.com) library, scores them with Prompt Score and offers a one-click Quick Optimize, without leaving the chat.
 
-**Status: prototype, Claude and Euria (Infomaniak), not on any store.** Selectors are hardcoded; ChatGPT, Gemini, remote selector config and one-click connect come in v1 once the prototype clears its gate.
+**Status: 0.1.1 on the Chrome Web Store (unlisted), Claude and Euria (Infomaniak).** Selectors are hardcoded; ChatGPT, Gemini, remote selector config and one-click connect come in v1 once the prototype clears its gate.
 
 ## What it does
 
@@ -13,7 +13,13 @@ Captures the prompts you send in [Claude](https://claude.ai) and [Euria](https:/
 
 You are asked for consent per site the first time. Pause everything, or disable a site, from the extension icon. Delete captured prompts any time from your library.
 
-## Install (unpacked)
+## Install
+
+From the Chrome Web Store (unlisted, link only): https://chromewebstore.google.com/detail/keep-my-prompts/kpdfoadeikmcchihgecmpkkkhpgfjifp
+
+Works in Chrome, Edge and Brave. The store ID is `kpdfoadeikmcchihgecmpkkkhpgfjifp`.
+
+## Install (unpacked, development)
 
 ```bash
 npm install
