@@ -1,6 +1,6 @@
 {
   "name": "keepmyprompts-extension",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Keep My Prompts browser extension: captures the prompts you send in Claude, scores them and offers a one-click Quick Optimize.",
   "license": "MIT",
