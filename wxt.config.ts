@@ -7,8 +7,9 @@ import { SITE_LIST } from './lib/sites'
 export default defineConfig({
   manifest: ({ mode }) => ({
     name: 'Keep My Prompts',
+    // The store rejects a manifest description over 132 characters.
     description:
-      'Captures the prompts you send in Claude, ChatGPT and Euria into your Keep My Prompts library, scores them and offers a one-click Quick Optimize.',
+      'Score, optimize and save the prompts you write in Claude, ChatGPT and Euria to your Keep My Prompts library, right in the chat.',
     // The Chrome Web Store's PUBLIC key for this listing (Package → View public key), so an unpacked
     // build gets the store's ID (kpdfoadeikmcchihgecmpkkkhpgfjifp) and Chrome treats it as the same
     // extension. The store REJECTS a manifest with `key` ("Il campo key non è consentito"), so the
