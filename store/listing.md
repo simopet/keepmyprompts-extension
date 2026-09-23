@@ -1,6 +1,6 @@
 # Chrome Web Store listing — Keep My Prompts
 
-Published 2026-09-21 (unlisted); 0.2.0 (ChatGPT, optional) prepared 2026-09-23: https://chromewebstore.google.com/detail/keep-my-prompts/kpdfoadeikmcchihgecmpkkkhpgfjifp · store ID `kpdfoadeikmcchihgecmpkkkhpgfjifp`
+Published 2026-09-21 (unlisted); 0.2.0 (ChatGPT, optional) submitted for review 2026-09-23: https://chromewebstore.google.com/detail/keep-my-prompts/kpdfoadeikmcchihgecmpkkkhpgfjifp · store ID `kpdfoadeikmcchihgecmpkkkhpgfjifp`
 
 Copy each block into the matching field of the Developer Dashboard. Plain text only: the store renders no
 markdown in descriptions (line breaks are kept).
@@ -98,6 +98,8 @@ Keep My Prompts è sviluppato in Europa. Assistenza: support@keepmyprompts.com
 Score, optimize and save to the user's Keep My Prompts library the prompts they write in supported AI chat sites (Claude, ChatGPT, Euria), directly from the chat composer.
 
 **Permission justifications**
+
+The dashboard has ONE field for all host permissions (optional ones included): paste the three host bullets below into «Host permission justification» as one text. `scripting` has its own field.
 
 - `storage`: stores the user's extension key, the per-site capture consent, the pause switch and the position of the pill. Nothing else.
 - Host permission `https://www.keepmyprompts.com/*`: the extension's own backend. All API calls (save a prompt, score it, optimize it, report a usage event) go to this host from the background service worker.
