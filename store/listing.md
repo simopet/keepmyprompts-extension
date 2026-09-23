@@ -1,6 +1,6 @@
 # Chrome Web Store listing — Keep My Prompts
 
-Published 2026-09-21 (unlisted): https://chromewebstore.google.com/detail/keep-my-prompts/kpdfoadeikmcchihgecmpkkkhpgfjifp · store ID `kpdfoadeikmcchihgecmpkkkhpgfjifp`
+Published 2026-09-21 (unlisted); 0.2.0 (ChatGPT, optional) prepared 2026-09-23: https://chromewebstore.google.com/detail/keep-my-prompts/kpdfoadeikmcchihgecmpkkkhpgfjifp · store ID `kpdfoadeikmcchihgecmpkkkhpgfjifp`
 
 Copy each block into the matching field of the Developer Dashboard. Plain text only: the store renders no
 markdown in descriptions (line breaks are kept).
@@ -13,7 +13,7 @@ markdown in descriptions (line breaks are kept).
 Keep My Prompts: Prompt Score in your chat
 
 **Summary** (≤ 132 chars, shown in search results)
-Score, optimize and save the prompts you write in Claude and Euria, right inside the chat, before you press Enter.
+Score, optimize and save the prompts you write in Claude, ChatGPT and Euria, right inside the chat, before you press Enter.
 
 **Category**: Productivity → Workflow & Planning
 **Language**: English (add Italian as a second listing language with the block below)
@@ -33,7 +33,7 @@ WHAT IT DOES
 • Your library, everywhere. Everything you save is available at keepmyprompts.com with version history, scoring and optimization, and to any MCP client you connect.
 
 SUPPORTED CHATS
-Claude (claude.ai) and Euria (euria.infomaniak.com), including Euria inside kSuite. More coming.
+Claude (claude.ai), ChatGPT (chatgpt.com) and Euria (euria.infomaniak.com), including Euria inside kSuite. ChatGPT is opt-in: tick it in the extension popup and Chrome asks you for access to that site. ChatGPT temporary chats are never captured.
 
 PRIVACY, IN ONE PARAGRAPH
 The extension captures only the text of the prompts you send, never the assistant's replies, conversation titles or anything else on the page. Capture is opt-in per site and can be paused from the extension icon at any time. Prompts are encrypted at rest. The extension runs only on the supported chat sites and does not read other tabs. Full details: https://www.keepmyprompts.com/privacy#extension
@@ -42,7 +42,7 @@ GETTING STARTED
 1. Create a free account at keepmyprompts.com.
 2. In Settings → Integrations → Browser extension, create an extension key.
 3. Click the extension icon, paste the key, press Connect.
-4. Open Claude or Euria, accept capture for the site, and write your next prompt.
+4. Open Claude or Euria, accept capture for the site, and write your next prompt. For ChatGPT, first tick "Capture on ChatGPT" in the popup.
 
 PLANS
 The free plan includes Prompt Score, Quick Optimize with a daily allowance and a library of 20 prompts. Pro and Ultimate add unlimited prompts, Deep Optimize and more daily optimizations. Pricing: https://www.keepmyprompts.com/pricing
@@ -57,7 +57,7 @@ Keep My Prompts is built in Europe. Support: support@keepmyprompts.com
 Keep My Prompts: Prompt Score nella chat
 
 **Riepilogo** (≤ 132 caratteri)
-Valuta, ottimizza e salva i prompt che scrivi in Claude ed Euria, direttamente nella chat, prima di premere Invio.
+Valuta, ottimizza e salva i prompt che scrivi in Claude, ChatGPT ed Euria, direttamente nella chat, prima di premere Invio.
 
 **Descrizione**
 
@@ -74,7 +74,7 @@ COSA FA
 • La tua libreria, ovunque. Tutto ciò che salvi è disponibile su keepmyprompts.com con storico delle versioni, valutazione e ottimizzazione, e in qualsiasi client MCP tu colleghi.
 
 CHAT SUPPORTATE
-Claude (claude.ai) ed Euria (euria.infomaniak.com), anche dentro kSuite. Altre in arrivo.
+Claude (claude.ai), ChatGPT (chatgpt.com) ed Euria (euria.infomaniak.com), anche dentro kSuite. ChatGPT si attiva su richiesta: spuntalo nel popup dell'estensione e Chrome ti chiederà l'accesso a quel sito. Le chat temporanee di ChatGPT non vengono mai catturate.
 
 PRIVACY, IN UN PARAGRAFO
 L'estensione cattura solo il testo dei prompt che invii, mai le risposte dell'assistente, i titoli delle conversazioni o altro contenuto della pagina. La cattura si attiva per ogni sito con il tuo consenso e si può mettere in pausa in qualsiasi momento dall'icona dell'estensione. I prompt sono cifrati a riposo. L'estensione funziona solo sui siti di chat supportati e non legge altre schede. Dettagli completi: https://www.keepmyprompts.com/privacy#extension
@@ -83,7 +83,7 @@ PER INIZIARE
 1. Crea un account gratuito su keepmyprompts.com.
 2. In Impostazioni → Integrazioni → Estensione browser, crea una chiave per l'estensione.
 3. Clicca l'icona dell'estensione, incolla la chiave, premi Connect.
-4. Apri Claude o Euria, accetta la cattura per il sito e scrivi il tuo prossimo prompt.
+4. Apri Claude o Euria, accetta la cattura per il sito e scrivi il tuo prossimo prompt. Per ChatGPT, spunta prima «Capture on ChatGPT» nel popup.
 
 PIANI
 Il piano gratuito include Prompt Score, Quick Optimize con una quota giornaliera e una libreria di 20 prompt. Pro e Ultimate aggiungono prompt illimitati, Deep Optimize e più ottimizzazioni al giorno. Prezzi: https://www.keepmyprompts.com/pricing
@@ -95,13 +95,15 @@ Keep My Prompts è sviluppato in Europa. Assistenza: support@keepmyprompts.com
 ## Privacy practices tab
 
 **Single purpose description**
-Score, optimize and save to the user's Keep My Prompts library the prompts they write in supported AI chat sites (Claude, Euria), directly from the chat composer.
+Score, optimize and save to the user's Keep My Prompts library the prompts they write in supported AI chat sites (Claude, ChatGPT, Euria), directly from the chat composer.
 
 **Permission justifications**
 
 - `storage`: stores the user's extension key, the per-site capture consent, the pause switch and the position of the pill. Nothing else.
 - Host permission `https://www.keepmyprompts.com/*`: the extension's own backend. All API calls (save a prompt, score it, optimize it, report a usage event) go to this host from the background service worker.
 - Content script on `https://claude.ai/*` and `https://euria.infomaniak.com/*`: required to read the text of the composer when the user presses Score, Optimize, Save or sends a message, to display the pill and the score next to the composer, and to insert the optimized variant into the composer on the user's request. The extension does not run on any other site.
+- Optional host permission `https://chatgpt.com/*`: the same use as the content scripts above, on ChatGPT. It is NOT granted at install: it is requested only when the user ticks "Capture on ChatGPT" in the popup, and it can be withdrawn at any time from Chrome's site-access settings.
+- `scripting`: registers the ChatGPT content script at runtime once the user has granted that optional permission, and injects it into ChatGPT tabs that were already open at that moment. It is never used on any other site and loads only the script bundled in the extension package.
 
 **Remote code**: No, the extension does not use remote code.
 
