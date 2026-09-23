@@ -36,7 +36,8 @@ export type Request =
   | { type: 'track'; name: string; properties?: Record<string, unknown> }
   | { type: 'me' }
 
-export type Response<T = unknown> = { ok: true; data: T } | { ok: false; status?: number; error: string }
+/** `resetInMinutes` travels with 429s (scoring and capture quotas) so the page can say when to retry. */
+export type Response<T = unknown> = { ok: true; data: T } | { ok: false; status?: number; error: string; resetInMinutes?: number }
 
 export type State = {
   connected: boolean

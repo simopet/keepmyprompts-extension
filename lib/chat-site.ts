@@ -1,19 +1,19 @@
 import { browser } from 'wxt/browser'
 import type { CaptureResult, Rating, Request, Response, State, Variant } from './messages'
-import type { SiteHost } from './settings'
+import type { SiteConfig } from './sites'
 import { t, type Strings } from './strings'
 
 /**
- * Shared logic of every chat-site content script (prototype: selectors hardcoded per site, see docs
- * § 4.2 / § 7 in the private repo). Each entrypoint passes a SiteConfig and calls runChatSite().
+ * Shared logic of every chat-site content script. Each entrypoint passes its SiteConfig from
+ * lib/sites.ts and calls runChatSite().
  *
  * Two flows live here (plan § 1 and § 1bis):
  *
  * 1. SILENT CAPTURE, after a send — "read on intent, confirm on empty": when the user presses
- *    Enter (no Shift) or clicks Send we read the composer text immediately, then 600 ms later
- *    check that the composer emptied. Only then the text is treated as sent. A message is captured
- *    only when it looks like a prompt (decision 6): the FIRST message of a conversation (URL still
- *    /new) needs at least 20 words, a follow-up at least 25. Skips are counted as events.
+ *    Enter (no Shift) in the COMPOSER or clicks Send we read the composer text immediately, then
+ *    600 ms later check that the composer emptied. Only then the text is treated as sent. A message
+ *    is captured only when it looks like a prompt (decision 6): the FIRST message of a conversation
+ *    needs at least 20 words, a follow-up at least 25. Skips are counted as events.
  *
  * 2. PRE-SEND BALLOON (decision 7) — a compact pill anchored to the composer, always visible,
  *    with «Score prompt» and «Save to library»; «Optimize» unlocks after the score. Everything
@@ -21,19 +21,10 @@ import { t, type Strings } from './strings'
  *    or sends: «Replace in composer» is a local action, the send then captures the final text.
  *    The manual buttons bypass the word thresholds (the user chose) but need 10 words, the
  *    minimum Quick Optimize accepts.
+ *
+ * State (connected, paused, per-site consent) is re-read from the worker whenever the settings
+ * change, so the popup's toggles apply to open tabs without a reload.
  */
-
-export interface SiteConfig {
-  host: SiteHost
-  /** Tried in order; the first visible match that is a textarea or contenteditable wins. */
-  composerSelectors: string[]
-  sendButtonSelector: string
-  /**
-   * true = the message about to be sent opens a conversation; false = it is a follow-up;
-   * null = the site gives no usable signal, treat every message as an opener (20-word threshold).
-   */
-  isNewConversation: () => boolean | null
-}
 
 let site: SiteConfig
 const CONFIRM_DELAY_MS = 600
@@ -43,15 +34,48 @@ const MIN_WORDS_MANUAL = 10
 const DUPLICATE_WINDOW_MS = 5000
 const ALREADY_GOOD_SCORE = 4.5
 
+const COMPOSER_CHECK_DELAY_MS = 10_000
+
 export function runChatSite(config: SiteConfig) {
+  // The popup's «enable» injects the script into tabs already open; never run twice in one page.
+  const g = globalThis as { __kmpChatSite?: boolean }
+  if (g.__kmpChatSite) return
+  g.__kmpChatSite = true
   site = config
   void boot()
 }
 
 // ---------- messaging ----------
 
-function send<T>(msg: Request): Promise<Response<T>> {
-  return browser.runtime.sendMessage(msg) as Promise<Response<T>>
+/**
+ * After an extension update (or a reload from chrome://extensions) the content scripts already
+ * running in open tabs are orphaned: the page keeps them, but every runtime call throws
+ * «Extension context invalidated». Without this the balloon stays on screen and silently does
+ * nothing; with it the UI is taken down and the user is told to reload.
+ */
+let orphaned = false
+
+async function send<T>(msg: Request): Promise<Response<T>> {
+  if (orphaned) return { ok: false, error: 'context_invalidated' }
+  try {
+    const res = (await browser.runtime.sendMessage(msg)) as Response<T> | undefined
+    return res ?? { ok: false, error: 'no_response' }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    if (!browser.runtime?.id || /context invalidated/i.test(message)) {
+      onOrphaned()
+      return { ok: false, error: 'context_invalidated' }
+    }
+    return { ok: false, error: message }
+  }
+}
+
+function onOrphaned() {
+  if (orphaned) return
+  orphaned = true
+  balloon?.destroy()
+  balloon = null
+  ui?.showMessage(strings.reloadPage)
 }
 
 // ---------- DOM helpers ----------
@@ -129,53 +153,119 @@ function ratingFromPromptScore(ps: Variant['promptScore']): Rating | null {
 }
 
 
-// ---------- boot ----------
+// ---------- boot and state ----------
 
 let strings: Strings = t('en')
 let state: State | null = null
 let ui: Ui | null = null
 let balloon: Balloon | null = null
+let consentOpen = false
+let captureArmed = false
 let lastCaptured = { text: '', at: 0 }
 /** The last composer text scored from the balloon, reused by the post-send badge when identical. */
 let draft: { text: string; rating: Rating | null } = { text: '', rating: null }
 
+const browserLocale = (): 'en' | 'it' => (navigator.language.toLowerCase().startsWith('it') ? 'it' : 'en')
+
 async function boot() {
-  const browserLocale: 'en' | 'it' = navigator.language.toLowerCase().startsWith('it') ? 'it' : 'en'
-  const res = await send<State>({ type: 'getState', host: site.host, locale: browserLocale })
+  // Leftovers of an instance orphaned by an extension update, if this one was injected over it.
+  document.querySelectorAll('[data-kmp-ext]').forEach(n => n.remove())
+  const res = await send<State>({ type: 'getState', host: site.host, locale: browserLocale() })
   if (!res.ok) return
   state = res.data
   strings = t(state.locale)
   ui = new Ui(strings)
-
-  if (!state.connected) return // nothing to do until the popup has a token
-  if (state.consent === undefined) {
-    ui.showConsent(async enabled => {
-      await send({ type: 'setConsent', host: site.host, enabled })
-      state = { ...(state as State), consent: enabled }
-      if (enabled) armCaptureListeners()
-      mountBalloon()
-    })
-    return
-  }
-  if (state.consent && !state.paused) armCaptureListeners()
-  if (!state.paused) mountBalloon()
+  apply()
+  // Popup toggles (pause, per-site capture, connect/disconnect) reach this tab without a reload.
+  // The change payload is not read: the worker stays the one place that interprets settings.
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.settings) void refreshState()
+  })
+  scheduleComposerCheck()
 }
 
-function mountBalloon() {
-  if (balloon || !state) return
-  balloon = new Balloon(strings, state.collapsed, state.balloonPos)
+async function refreshState() {
+  if (orphaned) return
+  const res = await send<State>({ type: 'getState', host: site.host })
+  if (!res.ok) return
+  state = res.data
+  apply()
+}
+
+/** Brings the page in line with `state`; safe to call any number of times. */
+function apply() {
+  if (!state || !ui || orphaned) return
+  if (!state.connected || state.paused) {
+    balloon?.destroy()
+    balloon = null
+    if (consentOpen) ui.hide()
+    consentOpen = false
+    return
+  }
+  if (state.consent === undefined) {
+    if (!consentOpen) {
+      consentOpen = true
+      ui.showConsent(async enabled => {
+        consentOpen = false
+        state = { ...(state as State), consent: enabled }
+        apply()
+        await send({ type: 'setConsent', host: site.host, enabled })
+      })
+    }
+    return
+  }
+  if (consentOpen) {
+    // Answered in another tab or from the popup.
+    consentOpen = false
+    ui.hide()
+  }
+  armCaptureListeners()
+  if (!balloon) balloon = new Balloon(strings, state.collapsed, state.balloonPos)
+}
+
+/** Silent capture happens only with the user's consent for this site, never while paused. */
+function captureEnabled(): boolean {
+  if (!state || orphaned) return false
+  if (!state.connected || state.paused || state.consent !== true) return false
+  return site.captureAllowed ? site.captureAllowed() : true
+}
+
+/**
+ * A chat page where no composer matches any selector means the site changed its markup: report
+ * it once per page, so a breakage shows up in the admin panel instead of in a user's complaint.
+ */
+function scheduleComposerCheck() {
+  const check = () => {
+    if (!state?.connected || !site.isChatPage() || findComposer()) return
+    void send({ type: 'track', name: 'ext_composer_missing', properties: { host: site.host } })
+  }
+  window.setTimeout(() => {
+    if (!document.hidden) return check()
+    const onVisible = () => {
+      if (document.hidden) return
+      document.removeEventListener('visibilitychange', onVisible)
+      window.setTimeout(check, 3000)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+  }, COMPOSER_CHECK_DELAY_MS)
 }
 
 // ---------- flow 1: silent capture after a send ----------
 
 function armCaptureListeners() {
+  if (captureArmed) return
+  captureArmed = true
   document.addEventListener(
     'keydown',
     e => {
       if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return
       const target = e.target as HTMLElement | null
-      if (!target || !(target.isContentEditable || isTextarea(target))) return
-      armCapture(composerText(target))
+      // Only Enter inside the composer is a send. Enter in another editor on the page (ChatGPT's
+      // Canvas, an «edit message» box) is a newline or a different action, and the confirmation
+      // below looks at the composer, so it would mistake that editor's text for a sent prompt.
+      const composer = findComposer()
+      if (!target || !composer || !composer.contains(target)) return
+      armCapture(composerText(composer))
     },
     true
   )
@@ -191,7 +281,7 @@ function armCaptureListeners() {
 }
 
 function armCapture(text: string) {
-  if (!text) return
+  if (!text || !captureEnabled()) return
   const signal = site.isNewConversation() // read BEFORE the send changes the URL
   const first = signal !== false // unknown counts as an opener
   const words = wordCount(text)
@@ -209,15 +299,38 @@ function armCapture(text: string) {
   }, CONFIRM_DELAY_MS)
 }
 
+type Failure = Extract<Response, { ok: false }>
+
+/**
+ * What to tell the user when a call fails: quotas and connection get their own words, anything
+ * else the generic error. null = say nothing (an orphaned script already asked for a reload).
+ */
+function failureMessage(res: Failure): string | null {
+  if (res.error === 'context_invalidated') return null
+  if (res.status === 401) return strings.notConnected
+  if (res.error === 'rate_limit_exceeded') return strings.scoreLimit(res.resetInMinutes)
+  if (res.error === 'daily_capture_limit') return strings.captureLimit
+  if (res.error === 'dailyLimitReached') return strings.dailyLimit
+  if (res.error === 'tooShort') return strings.tooShort
+  return strings.error
+}
+
+function showFailure(res: Failure) {
+  const message = failureMessage(res)
+  if (message) ui?.showMessage(message)
+  else ui?.hide()
+}
+
 async function onSent(text: string) {
   if (!ui) return
   ui.showScoring()
   const cap = await send<CaptureResult>({ type: 'capture', host: site.host, content: text })
   if (!cap.ok) {
     if (cap.error === 'capture_disabled') return ui.hide()
-    if (cap.status === 401) return ui.showMessage(strings.notConnected)
-    void send({ type: 'track', name: 'ext_capture_failed', properties: { reason: cap.error } })
-    return ui.showMessage(strings.error)
+    if (cap.error !== 'context_invalidated' && cap.status !== 401) {
+      void send({ type: 'track', name: 'ext_capture_failed', properties: { reason: cap.error } })
+    }
+    return showFailure(cap)
   }
 
   const data = cap.data
@@ -226,17 +339,22 @@ async function onSent(text: string) {
 
   // If the balloon already scored exactly this text, reuse it instead of paying a second call.
   let rating: Rating | null = null
+  // Why there is no number, when there is none: a spent scoring quota must not read as a bug.
+  let scoreError: string | null = null
   if (draft.rating && sameText(draft.text, text)) {
     rating = draft.rating
   } else {
     const scoreRes = await send<{ success: boolean; rating?: Rating; error?: string }>(
       promptId ? { type: 'score', prompt_id: promptId } : { type: 'score', content: text }
     )
+    if (orphaned) return
     rating = scoreRes.ok && scoreRes.data.success ? scoreRes.data.rating ?? null : null
+    if (!scoreRes.ok) scoreError = failureMessage(scoreRes)
   }
 
   ui.showScored({
     rating,
+    scoreError,
     promptId,
     atLimit: atLimit ? { max: (data as { max: number | null }).max ?? 20 } : null,
     reused: 'use_count' in data && data.use_count > 1 ? data.use_count : null,
@@ -249,6 +367,7 @@ async function optimizeSaved(promptId: string) {
   ui.showOptimizing()
   const res = await send<OptimizeBody>({ type: 'optimize', prompt_id: promptId })
   const variant = unwrapVariant(res)
+  if (variant === null) return ui.hide()
   if (typeof variant === 'string') return ui.showMessage(variant)
 
   ui.showVariant(variant, {
@@ -278,9 +397,12 @@ async function optimizeSaved(promptId: string) {
 
 type OptimizeBody = { success: boolean; data?: { variants: Variant[] }; remaining?: number; error?: string }
 
-/** Turns an optimize response into a variant, or into the message to show instead. */
-function unwrapVariant(res: Response<OptimizeBody>): Variant | string {
-  if (!res.ok) return res.status === 401 ? strings.notConnected : strings.error
+/**
+ * Turns an optimize response into a variant, or into the message to show instead (null = nothing
+ * to show). The daily limit arrives as a 403, i.e. as a failed call, not as `success: false`.
+ */
+function unwrapVariant(res: Response<OptimizeBody>): Variant | string | null {
+  if (!res.ok) return failureMessage(res)
   const body = res.data
   if (!body.success) {
     if (body.error === 'alreadyOptimal') return strings.alreadyOptimal
@@ -294,22 +416,23 @@ async function scoreDraft(text: string) {
   if (!balloon || !ui) return
   balloon.setBusy(strings.scoring)
   const res = await send<{ success: boolean; rating?: Rating; error?: string }>({ type: 'score', content: text })
-  balloon.setBusy(null)
+  balloon?.setBusy(null)
   const rating = res.ok && res.data.success ? res.data.rating ?? null : null
   if (!rating) {
-    return ui.showMessage(!res.ok && res.status === 401 ? strings.notConnected : strings.error)
+    return res.ok ? ui.showMessage(strings.error) : showFailure(res)
   }
   draft = { text, rating }
   void send({ type: 'track', name: 'ext_draft_scored', properties: { score: Number(rating.overallScore), host: site.host } })
-  balloon.render()
+  balloon?.render()
 }
 
 async function optimizeDraft(text: string) {
   if (!balloon || !ui) return
   balloon.setBusy(strings.optimizing)
   const res = await send<OptimizeBody>({ type: 'optimize', content: text })
-  balloon.setBusy(null)
+  balloon?.setBusy(null)
   const variant = unwrapVariant(res)
+  if (variant === null) return
   if (typeof variant === 'string') return ui.showMessage(variant)
   const remaining = res.ok ? res.data.remaining : undefined
 
@@ -338,14 +461,12 @@ async function saveDraft(text: string) {
   if (!balloon || !ui) return
   balloon.setBusy(strings.saving)
   const cap = await send<CaptureResult>({ type: 'capture', host: site.host, content: text, manual: true })
-  balloon.setBusy(null)
-  if (!cap.ok) {
-    return ui.showMessage(cap.status === 401 ? strings.notConnected : strings.error)
-  }
+  balloon?.setBusy(null)
+  if (!cap.ok) return showFailure(cap)
   if ('at_limit' in cap.data && cap.data.at_limit) {
     return ui.showAtLimit(cap.data.max ?? 20)
   }
-  balloon.flash(strings.saved)
+  balloon?.flash(strings.saved)
 }
 
 // ---------- UI: shared styles ----------
@@ -393,7 +514,7 @@ function esc(s: string): string {
   return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
 }
 
-function makeShadowHost(): { root: ShadowRoot; box: HTMLDivElement } {
+function makeShadowHost(): { host: HTMLDivElement; root: ShadowRoot; box: HTMLDivElement } {
   const host = document.createElement('div')
   host.setAttribute('data-kmp-ext', '')
   document.documentElement.appendChild(host)
@@ -403,7 +524,7 @@ function makeShadowHost(): { root: ShadowRoot; box: HTMLDivElement } {
   root.appendChild(style)
   const box = document.createElement('div')
   root.appendChild(box)
-  return { root, box }
+  return { host, root, box }
 }
 
 // ---------- UI: post-send badge and panels (bottom-right) ----------
@@ -507,6 +628,7 @@ class Ui {
 
   showScored(opts: {
     rating: Rating | null
+    scoreError: string | null
     promptId: string | null
     atLimit: { max: number } | null
     reused: number | null
@@ -518,20 +640,22 @@ class Ui {
       : `<span class="dot" style="background:#94a3b8">?</span>`
     const label = opts.atLimit ? this.s.atLimit(opts.atLimit.max) : opts.reused ? this.s.reused(opts.reused) : this.s.saved
     this.show(`<div class="badge" data-a="open">${dot}<span class="muted">${esc(label)}</span></div>`)
-    this.q('[data-a="open"]')?.addEventListener('click', () => this.showDetail(opts.rating, opts.atLimit, opts.onOptimize))
+    this.q('[data-a="open"]')?.addEventListener('click', () => this.showDetail(opts.rating, opts.atLimit, opts.onOptimize, opts.scoreError))
     // A confirmation, not a dialog: it goes away by itself (longer when there is something to act on).
     this.autoHide(opts.atLimit ? 12000 : 6000)
   }
 
   /** Criteria + tip panel; used by the post-send badge and by the balloon's score dot. */
-  showDetail(rating: Rating | null, atLimit: { max: number } | null, onOptimize: (() => void) | null) {
+  showDetail(rating: Rating | null, atLimit: { max: number } | null, onOptimize: (() => void) | null, scoreError: string | null = null) {
     const overall = rating ? Number(rating.overallScore) : NaN
     const rows = rating
       ? Object.entries(rating.scores)
           .map(([k, v]) => `<div class="row"><span>${esc(this.s.criteria[k] ?? k)}</span><b>${esc(String(v))}</b></div>`)
           .join('')
       : ''
-    const tip = rating?.tip ? `<div class="tip"><b>${esc(this.s.tip)}:</b> ${esc(rating.tip)}</div>` : ''
+    const tip = rating?.tip
+      ? `<div class="tip"><b>${esc(this.s.tip)}:</b> ${esc(rating.tip)}</div>`
+      : !rating && scoreError ? `<div class="tip">${esc(scoreError)}</div>` : ''
     const limit = atLimit
       ? `<div class="tip">${esc(this.s.atLimit(atLimit.max))} <a class="btn link" href="${esc((state?.apiBase ?? '') + '/pricing')}" target="_blank" rel="noopener">${esc(this.s.upgrade)}</a></div>`
       : ''
@@ -559,7 +683,16 @@ class Ui {
 // ---------- UI: the pre-send balloon (anchored to the composer) ----------
 
 class Balloon {
+  private host: HTMLDivElement
   private box: HTMLDivElement
+  private interval: number
+  private frame = 0
+  private onResize = () => this.anchor()
+  /** Scroll fires continuously while a reply streams: re-anchor at most once per frame. */
+  private onScroll = () => {
+    if (this.frame) return
+    this.frame = window.requestAnimationFrame(() => { this.frame = 0; this.anchor() })
+  }
   private busy: string | null = null
   private flashText: string | null = null
   private flashTimer: number | undefined
@@ -570,14 +703,26 @@ class Balloon {
 
   constructor(private s: Strings, private collapsed: boolean, pos: { x: number; y: number } | null) {
     this.pos = pos
-    this.box = makeShadowHost().box
+    const shadow = makeShadowHost()
+    this.host = shadow.host
+    this.box = shadow.box
     this.box.className = 'pill'
     this.box.style.display = 'none'
     this.render()
-    // Re-anchor cheaply: Claude re-renders its composer often, and a rAF loop would be overkill.
-    window.setInterval(() => this.tick(), 250)
-    window.addEventListener('resize', () => this.anchor())
-    window.addEventListener('scroll', () => this.anchor(), true)
+    // Re-anchor cheaply: the sites re-render their composer often, and a rAF loop would be overkill.
+    this.interval = window.setInterval(() => this.tick(), 250)
+    window.addEventListener('resize', this.onResize)
+    window.addEventListener('scroll', this.onScroll, true)
+  }
+
+  /** Paused from the popup, disconnected, or orphaned by an update: leave no trace on the page. */
+  destroy() {
+    window.clearInterval(this.interval)
+    window.clearTimeout(this.flashTimer)
+    window.cancelAnimationFrame(this.frame)
+    window.removeEventListener('resize', this.onResize)
+    window.removeEventListener('scroll', this.onScroll, true)
+    this.host.remove()
   }
 
   /** Current viewport rectangle, used by the panels to open next to the pill. */
@@ -644,6 +789,7 @@ class Balloon {
 
   /** Follows the composer text; when it changes, a previous draft score no longer applies. */
   private tick() {
+    if (document.hidden) return // nothing to follow in a background tab; innerText forces a layout
     const now = composerText(findComposer())
     if (now !== this.text) {
       this.text = now

@@ -1,24 +1,12 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { runChatSite } from '../lib/chat-site'
+import { SITES } from '../lib/sites'
 
-/** claude.ai: ProseMirror composer, URL /new → /chat/<id> on the first send. */
+/** claude.ai — selectors and signals in lib/sites.ts. */
 export default defineContentScript({
-  matches: ['https://claude.ai/*'],
+  matches: SITES['claude.ai'].matches,
   runAt: 'document_idle',
   main() {
-    runChatSite({
-      host: 'claude.ai',
-      composerSelectors: [
-        'div.ProseMirror[contenteditable="true"]',
-        '[contenteditable="true"][role="textbox"]',
-        'fieldset [contenteditable="true"]',
-        '[contenteditable="true"]',
-      ],
-      sendButtonSelector: 'button[aria-label*="send" i], button[aria-label*="invia" i], button[type="submit"]',
-      isNewConversation: () => {
-        const p = location.pathname.replace(/\/+$/, '')
-        return p === '' || p === '/new' || p.startsWith('/new/')
-      },
-    })
+    runChatSite(SITES['claude.ai'])
   },
 })

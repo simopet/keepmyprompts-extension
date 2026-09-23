@@ -1,4 +1,20 @@
 /** UI copy, EN + IT. Italian carries its accents; no em dashes. */
+
+/** «in 12 min» / «in about 3 h»: quotas reset on the hour or at midnight, minutes past 60 are noise. */
+function waitEn(minutes?: number): string {
+  if (typeof minutes !== 'number' || minutes <= 0) return 'later'
+  if (minutes < 60) return `in ${minutes} min`
+  const h = Math.round(minutes / 60)
+  return h === 1 ? 'in about an hour' : `in about ${h} hours`
+}
+
+function waitIt(minutes?: number): string {
+  if (typeof minutes !== 'number' || minutes <= 0) return 'più tardi'
+  if (minutes < 60) return `tra ${minutes} minuti`
+  const h = Math.round(minutes / 60)
+  return h === 1 ? 'tra circa un’ora' : `tra circa ${h} ore`
+}
+
 const STRINGS = {
   en: {
     consentTitle: 'Keep My Prompts',
@@ -36,6 +52,9 @@ const STRINGS = {
     expand: 'Keep My Prompts',
     alreadyScored: 'Already scored. Edit the text to score again.',
     dragHint: 'Click: show/hide · Drag: move · Double-click: back next to the composer',
+    reloadPage: 'Keep My Prompts was updated. Reload the page to keep using it.',
+    scoreLimit: (minutes?: number) => `Prompt Score limit reached. Try again ${waitEn(minutes)}.`,
+    captureLimit: 'Daily saving limit reached: prompts you send today will not be saved until tomorrow.',
     criteria: { clarity: 'Clarity', context: 'Context', tcof: 'TCOF structure', rolePrompting: 'Role', fewShot: 'Examples', chainOfThought: 'Step-by-step reasoning', behavioralClarity: 'Behavioral clarity', constraintCoverage: 'Constraint coverage', personaTone: 'Persona and tone' } as Record<string, string>,
   },
   it: {
@@ -74,6 +93,9 @@ const STRINGS = {
     expand: 'Keep My Prompts',
     alreadyScored: 'Già valutato. Modifica il testo per valutarlo di nuovo.',
     dragHint: 'Clic: mostra/nascondi · Trascina: sposta · Doppio clic: torna accanto alla casella',
+    reloadPage: 'L’estensione Keep My Prompts è stata aggiornata: ricarica la pagina per continuare a usarla.',
+    scoreLimit: (minutes?: number) => `Hai raggiunto il limite di Prompt Score. Riprova ${waitIt(minutes)}.`,
+    captureLimit: 'Hai raggiunto il limite giornaliero di salvataggi: fino a domani i prompt che invii non verranno salvati.',
     criteria: { clarity: 'Chiarezza', context: 'Contesto', tcof: 'Struttura TCOF', rolePrompting: 'Ruolo', fewShot: 'Esempi', chainOfThought: 'Ragionamento passo passo', behavioralClarity: 'Chiarezza comportamentale', constraintCoverage: 'Copertura dei vincoli', personaTone: 'Persona e tono' } as Record<string, string>,
   },
 } as const

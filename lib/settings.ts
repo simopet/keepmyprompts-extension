@@ -1,12 +1,15 @@
 import { browser } from 'wxt/browser'
+import type { SiteHost } from './sites'
+
+export type { SiteHost }
 
 /**
  * Everything the extension remembers, in chrome.storage.local (never a cookie, never the page).
  * `token` is the `kmp_live_...` extension key (scope `ext`); it is only ever read by the
- * background service worker, which is the single place that talks to the API.
+ * background service worker, which is the single place that talks to the API. Content scripts
+ * listen to storage changes only as a trigger to ask the worker for a fresh State; they never read
+ * the settings object themselves.
  */
-export type SiteHost = 'claude.ai' | 'euria.infomaniak.com'
-
 export interface Settings {
   apiBase: string
   token: string | null

@@ -1,8 +1,8 @@
 # Keep My Prompts — browser extension (prototype)
 
-Captures the prompts you send in [Claude](https://claude.ai) and [Euria](https://euria.infomaniak.com) into your [Keep My Prompts](https://www.keepmyprompts.com) library, scores them with Prompt Score and offers a one-click Quick Optimize, without leaving the chat.
+Captures the prompts you send in [Claude](https://claude.ai), [ChatGPT](https://chatgpt.com) and [Euria](https://euria.infomaniak.com) into your [Keep My Prompts](https://www.keepmyprompts.com) library, scores them with Prompt Score and offers a one-click Quick Optimize, without leaving the chat.
 
-**Status: 0.1.1 on the Chrome Web Store (unlisted), Claude and Euria (Infomaniak).** Selectors are hardcoded; ChatGPT, Gemini, remote selector config and one-click connect come in v1 once the prototype clears its gate.
+**Status: 0.2.0, Claude and Euria (Infomaniak) active from install, ChatGPT opt-in from the popup.** 0.1.2 is the version on the Chrome Web Store (unlisted). Selectors live in `lib/sites.ts`; Gemini, remote selector config and one-click connect come later.
 
 ## What it does
 
@@ -11,7 +11,13 @@ Captures the prompts you send in [Claude](https://claude.ai) and [Euria](https:/
 2. **Prompt Score badge.** A small pill appears bottom-right with the score. Click it for the six criteria and a tip.
 3. **Improve this prompt.** Quick Optimize runs; the variant opens in a panel with *Replace in composer* (your library prompt becomes the variant, the previous text is kept as a version) and *Save as version*.
 
-You are asked for consent per site the first time. Pause everything, or disable a site, from the extension icon. Delete captured prompts any time from your library.
+You are asked for consent per site the first time. Pause everything, or disable a site, from the extension icon: the change applies to open tabs at once. Delete captured prompts any time from your library.
+
+**ChatGPT is opt-in.** The extension does not run on chatgpt.com until you tick *Capture on ChatGPT* in the popup; Chrome then asks for access to that site (an optional permission, so installing or updating never asks for it). Temporary chats are never captured.
+
+## Adding a site
+
+One entry in `lib/sites.ts` (selectors, conversation signal, `optional`), one `entrypoints/<site>.content.ts`, and the host in the server's `ALLOWED_HOSTS` (capture route). A new site should be `optional: true`: adding a required host in an update makes Chrome disable the extension until each user re-approves it.
 
 ## Install
 
@@ -41,7 +47,7 @@ The manifest `key` is the Chrome Web Store's public key for this listing, so unp
 
 ## Privacy
 
-Sent to the server: the prompt text, the host (`claude.ai`), a timestamp. Never sent: replies, conversation titles or ids, anything from other tabs. Content is encrypted at rest with the same scheme as the web app. The token lives in `chrome.storage.local` and is only read by the background worker.
+Sent to the server: the prompt text, the host (`claude.ai`, `chatgpt.com`, …), a timestamp. Never sent: replies, conversation titles or ids, anything from other tabs. Content is encrypted at rest with the same scheme as the web app. The token lives in `chrome.storage.local` and is only read by the background worker.
 
 ## License
 
